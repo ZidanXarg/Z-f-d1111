@@ -22,6 +22,14 @@ async def start(_, m):
     usr_name = m.from_user.first_name
     await m.reply(f"**you are {usr_name} , so What**")
     
+
+@copier.on_message((filters.video |filters.photo | filters.document) & filters.chat([FROM]) )
+async def autokang(c,m):
+    await copier.copy_message(TO,from_chat_id=FROM, message_id=m.id)
+      
+    
+    
+    
     
 @copier.on_message(filters.private & filters.command(['kang'],['!','.']))
 async def kanger(c,m):
