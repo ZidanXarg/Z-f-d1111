@@ -1,41 +1,28 @@
-import logging
-from telegram import Bot, InputFile
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import os
 
-# Configure your bot token and channel IDs here
-BOT_TOKEN = '6426959941:AAFn8NA_y6ySmnMRyt4Z3p2kvlqQdV7ILMY'
-CHANNEL_1_ID = '-1001936730771'
-CHANNEL_2_ID = '-1001941706320'
+# Replace 'YOUR_BOT_TOKEN' with your actual bot token
+updater = Updater(token='6566168833:AAH0-XJsQvBw4rDFHN-6yuIrUnvLbVyd2FM', use_context=True)
+dispatcher = updater.dispatcher
 
-# Enable logging for debugging purposes
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+def delete_file(update, context):
+    file_id = update.message.document.file_id
+    file_info = context.bot.get_file(file_id)
+    file_path = file_info.file_path
+    file_size = file_info.file_size
 
-# Initialize the bot and updater
-bot = Bot(BOT_TOKEN)
-updater = Updater(BOT_TOKEN)
+    # Check if there are any other files with the same size and name
+    files_with_same_name = [f for f in os.listdir() if os.path.isfile(f) and os.path.getsize(f) == file_size and f == file_path]
+    
+    if len(files_with_same_name) > 1:
+        # Delete the file
+        os.remove(file_path)
+        update.message.reply_text("File deleted successfully!")
+    else:
+        update.message.reply_text("There are no other files with the same size and name.")
 
-# Define the function to start (send) and delete files
-def start_and_delete_files(bot, update):
-    try:
-        # Get the name provided as a command argument
-        name = update.message.text.split(' ', 1)[1]
+delete_handler = MessageHandler(Filters.document, delete_file)
+dispatcher.add_handler(delete_handler)
 
-        # Get all messages from the first channel
-        messages = bot.get_chat_history(chat_id=CHANNEL_1_ID, limit=1000)
-
-        for message in messages:
-            if message.document and message.document.file_name == name:
-                # Start (send) the file to the second channel
-                bot.send_document(chat_id=CHANNEL_2_ID, document=InputFile(message.document.file_id))
-
-                # Delete the forwarded file from the first channel
-                bot.delete_message(chat_id=CHANNEL_1_ID, message_id=message.message_id)
-
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-
-# Define the command handler for the start_and_delete_files command
-updater.dispatcher.add_handler(CommandHandler('start_and_delete_files', start_and_delete_files))
-
-# Start the bot
 updater.start_polling()
+updater.idle()
